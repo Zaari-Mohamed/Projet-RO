@@ -22,7 +22,7 @@ if __name__ == "__main__":
                         choices=ALGOS.keys(), help="Algorithmes à exécuter")
     parser.add_argument("--data", choices=["random", "file"], default="random")
     parser.add_argument("--services", type=int, default=25)
-    parser.add_argument("--vms", type=int, default=7)
+    parser.add_argument("--vms", type=int, default=5)
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
 

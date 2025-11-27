@@ -1,0 +1,7 @@
+[
+  {"id": 0, "cpu_capacity": 20, "ram_capacity": 64},
+  {"id": 1, "cpu_capacity": 16, "ram_capacity": 32},
+  {"id": 2, "cpu_capacity": 24, "ram_capacity": 48},
+  {"id": 3, "cpu_capacity": 20, "ram_capacity": 64},
+  {"id": 4, "cpu_capacity": 32, "ram_capacity": 64}
+]

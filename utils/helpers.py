@@ -1,4 +1,5 @@
 # utils/helpers.py
+import streamlit as st
 import json
 import random
 from models.entities import VM, Service
@@ -44,17 +45,3 @@ def compute_metrics(vms: List[VM], services: List[Service]) -> Dict:
         "cpu_util_%": round(cpu_util, 2),
         "ram_util_%": round(ram_util, 2)
     }
-
-def print_results(algo_name: str, assignment: Dict[int, int], vms: List[VM], metrics: Dict, elapsed: float):
-    print(f"\n{'='*70}")
-    print(f"{algo_name.upper():^70}")
-    print(f"{'='*70}")
-    print(f"Temps d'execution : {elapsed:.4f}s")
-    print(f"Makespan           : {metrics['makespan']}")
-    print(f"Services places    : {metrics['assigned']}/{metrics['assigned']+metrics['rejected']}")
-    print(f"Utilisation        : CPU {metrics['cpu_util_%']}% | RAM {metrics['ram_util_%']}%")
-    print("\nRepartition par VM :")
-    for vm in sorted(vms, key=lambda x: x.id):
-        ids = [s.id for s in vm.services]
-        # Solution ASCII simple
-        print(f"  VM{vm.id:2d} : {len(ids)} services {ids}  (makespan={vm.completion_time:.1f})")

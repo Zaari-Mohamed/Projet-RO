@@ -40,6 +40,10 @@ class VM:
         self.ram_free = self.ram_capacity
         self.services.clear()
         self.completion_time = 0.0
+    def cpu_used(self):
+        return sum(service.cpu for service in self.services)
+    def ram_used(self):
+        return sum(service.ram for service in self.services)
 
     def __repr__(self):
         return f"VM{self.id}(free_cpu={self.cpu_free:.1f}, free_ram={self.ram_free:.1f})"

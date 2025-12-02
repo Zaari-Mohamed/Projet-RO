@@ -14,7 +14,7 @@ from models.entities import VM
 
 # Configuration de la page
 st.set_page_config(page_title="Cloud Scheduling Algorithms", layout="wide")
-st.title("☁️ Comparaison d'algorithmes d'ordonnancement Cloud")
+st.title("☁️ Optimisation de l'affectation des resources dans le Cloud ")
 
 # Sidebar pour les paramètres
 with st.sidebar:
@@ -73,14 +73,16 @@ if run_button:
     # === Affichage des résultats ===
     st.success(f"✅ {algo_display_name} terminé en {elapsed:.4f} secondes !")
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4 , col5 = st.columns(5)
     with col1:
         st.metric("Makespan", f"{metrics['makespan']:.2f}s")
     with col2:
         st.metric("Services placés", f"{metrics['assigned']}", f"/ {metrics['assigned'] + metrics['rejected']}")
     with col3:
-        st.metric("Utilisation CPU", f"{metrics['cpu_util_%']:.1f}%")
+        st.metric("Services rejetés", f"{metrics['rejected']}")
     with col4:
+        st.metric("Utilisation CPU", f"{metrics['cpu_util_%']:.1f}%")
+    with col5:
         st.metric("Utilisation RAM", f"{metrics['ram_util_%']:.1f}%")
 
     st.markdown(f"### Répartition des services par VM ({algo_display_name})")
@@ -158,10 +160,110 @@ Répartition par VM :
 else:
     st.info("👈 Configurez les paramètres à gauche et cliquez sur **Lancer l'algorithme** pour commencer.")
     st.markdown("""
-    ### Algorithmes disponibles :
-    - **First-Fit** : Place le service dans la première VM qui a assez de ressources
-    - **Best-Fit** : Place dans la VM avec le moins d'espace restant (meilleur ajustement)
-    - **Min-Min** : Ordonnancement heuristique rapide
-    - **Max-Min** : Variante favorisant les grandes tâches d'abord
-    - **Genetic Algorithm** : Métaheuristique évolutionnaire (plus lent mais souvent meilleur)
-    """)
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap');
+
+    .algo-card-premium {
+        background: linear-gradient(145deg, #2d2d5a 0%, #1a1a3a 100%);
+        padding: 30px;
+        border-radius: 20px;
+        color: #ffffff;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        border: 3px solid rgba(255, 255, 255, 0.15);
+        min-height: 180px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        font-family: 'Poppins', sans-serif;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .algo-card-premium::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transition: 0.5s;
+    }
+
+    .algo-card-premium:hover::before {
+        left: 100%;
+    }
+
+    .algo-card-premium:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    }
+
+    .algo-title-premium {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        letter-spacing: 0.5px;
+        color: #ffffff;
+    }
+
+    .algo-desc-premium {
+        font-size: 20px;
+        opacity: 0.92;
+        line-height: 1.6;
+        font-weight: 600;
+        color: #e6e6ff;
+    }
+
+    /* Couleurs spécifiques pour chaque carte */
+    .ff-premium { background: linear-gradient(145deg, #2c3e50 0%, #34495e 100%) !important; }
+    .bf-premium { background: linear-gradient(145deg, #8e44ad 0%, #9b59b6 100%) !important; }
+    .mm-premium { background: linear-gradient(145deg, #2980b9 0%, #3498db 100%) !important; }
+    .mxm-premium { background: linear-gradient(145deg, #d35400 0%, #e67e22 100%) !important; }
+    .ga-premium { background: linear-gradient(145deg, #16a085 0%, #1abc9c 100%) !important; }
+    .comp-premium { background: linear-gradient(145deg, #7f8c8d 0%, #95a5a6 100%) !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("""
+        <div class="algo-card-premium ff-premium">
+            <div class="algo-title-premium">🔍 First-Fit</div>
+            <div class="algo-desc-premium">Place le service dans la première VM disponible avec assez de ressources</div>
+        </div>
+        
+        <div class="algo-card-premium bf-premium">
+            <div class="algo-title-premium">🎯 Best-Fit</div>
+            <div class="algo-desc-premium">Place dans la VM avec le moins d'espace restant (meilleur ajustement)</div>
+        </div>
+        
+        <div class="algo-card-premium mm-premium">
+            <div class="algo-title-premium">⚡ Min-Min</div>
+            <div class="algo-desc-premium">Ordonnancement heuristique rapide - tâches courtes d'abord</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+        <div class="algo-card-premium mxm-premium">
+            <div class="algo-title-premium">📈 Max-Min</div>
+            <div class="algo-desc-premium">Variante favorisant les grandes tâches d'abord</div>
+        </div>
+        
+        <div class="algo-card-premium ga-premium">
+            <div class="algo-title-premium">🧬 Genetic Algorithm</div>
+            <div class="algo-desc-premium">Métaheuristique évolutionnaire - plus lent mais souvent meilleur</div>
+        </div>
+        
+        <div class="algo-card-premium comp-premium">
+            <div class="algo-title-premium">📊 Comparaison</div>
+            <div class="algo-desc-premium">Testez et comparez les performances de chaque algorithme</div>
+        </div>
+        """, unsafe_allow_html=True)

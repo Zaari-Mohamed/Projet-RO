@@ -45,7 +45,38 @@ with st.sidebar:
     seed = st.number_input("Seed (pour reproductibilité)", value=123, step=1)
     
     st.markdown("---")
+    
+    # Afficher options GA uniquement si sélectionné
+    if algo_name == "genetic algorithm":
+        st.subheader("⚙️ Paramètres GA")
+        ga_objective = st.selectbox(
+            "Objectif de l'algorithme génétique",
+            options=[
+                ("Minimiser le Makespan (temps)", "makespan"),
+                ("Minimiser les VMs utilisées", "vms"),
+                ("Hybride (70% temps + 30% VMs)", "hybrid"),
+            ],
+            format_func=lambda x: x[0],
+            help="Choisissez ce que vous voulez optimiser"
+        )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            ga_pop_size = st.slider("Taille population", min_value=20, max_value=200, value=100, step=10)
+        with col2:
+            ga_generations = st.slider("Générations", min_value=50, max_value=500, value=200, step=50)
+    else:
+        # Valeurs par défaut si pas GA
+        ga_pop_size = 100
+        ga_generations = 200
+        ga_objective = ("Minimiser le Makespan (temps)", "makespan")
+    
+    st.markdown("---")
     run_button = st.button("🚀 Lancer l'algorithme", type="primary", use_container_width=True)
+    
+    st.markdown("---")
+    st.subheader("📊 Comparaison")
+    comparison_button = st.button("🔄 Comparer tous les algos", type="secondary", use_container_width=True)
 
 # Contenu principal
 if run_button:
@@ -60,7 +91,13 @@ if run_button:
         
         # Exécution de l'algorithme
         if algo_name == "genetic algorithm":
-            assignment, vms_result = algo_function(services, vms_template)
+            assignment, vms_result = algo_function(
+                services, 
+                vms_template,
+                pop_size=ga_pop_size,
+                generations=ga_generations,
+                objective=ga_objective[1]  # Récupère le code (2ème élément du tuple)
+            )
         else:
             assignment = algo_function(services.copy(), vms)
             vms_result = vms
@@ -267,3 +304,143 @@ else:
             <div class="algo-desc-premium">Testez et comparez les performances de chaque algorithme</div>
         </div>
         """, unsafe_allow_html=True)
+
+# === SECTION COMPARAISON ===
+if comparison_button:
+    st.markdown("---")
+    st.header("📊 Comparaison de tous les algorithmes")
+    
+    with st.spinner("Exécution de tous les algorithmes en cours..."):
+        # Génération des données une seule fois
+        services, vms_template = generate_random_data(nb_services, nb_vms, seed)
+        
+        # Résultats de tous les algos
+        results = {}
+        execution_times = {}
+        
+        algos_to_compare = [
+            ("First-Fit", "first-fit", first_fit),
+            ("Best-Fit", "best-fit", best_fit),
+            ("Min-Min", "min-min", min_min),
+            ("Max-Min", "max-min", max_min),
+            ("Genetic Algorithm", "genetic algorithm", genetic_algorithm),
+        ]
+        
+        for algo_display, algo_name, algo_func in algos_to_compare:
+            start = time.time()
+            
+            # Copie propre des VMs
+            vms = [VM(vm.id, vm.cpu_capacity, vm.ram_capacity) for vm in vms_template]
+            
+            # Exécution
+            try:
+                if algo_name == "genetic algorithm":
+                    assignment, vms_result = algo_func(
+                        services, 
+                        vms_template,
+                        pop_size=ga_pop_size,
+                        generations=ga_generations,
+                        objective=ga_objective[1]
+                    )
+                else:
+                    assignment = algo_func(services.copy(), vms)
+                    vms_result = vms
+                
+                elapsed = time.time() - start
+                metrics = compute_metrics(vms_result, services)
+                
+                results[algo_display] = {
+                    "metrics": metrics,
+                    "vms": vms_result,
+                    "assignment": assignment
+                }
+                execution_times[algo_display] = elapsed
+            except Exception as e:
+                st.warning(f"Erreur avec {algo_display}: {str(e)}")
+        
+        # === Affichage comparatif ===
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.subheader("⏱️ Temps d'exécution")
+            fig, ax = plt.subplots(figsize=(8, 5))
+            algos = list(execution_times.keys())
+            times = list(execution_times.values())
+            colors = sns.color_palette("husl", len(algos))
+            ax.barh(algos, times, color=colors)
+            ax.set_xlabel("Temps (secondes)")
+            ax.set_title("Temps d'exécution")
+            st.pyplot(fig)
+            plt.close()
+        
+        with col2:
+            st.subheader("⏱️ Makespan")
+            fig, ax = plt.subplots(figsize=(8, 5))
+            algos = list(results.keys())
+            makespans = [results[a]["metrics"]["makespan"] for a in algos]
+            colors = sns.color_palette("husl", len(algos))
+            bars = ax.barh(algos, makespans, color=colors)
+            ax.set_xlabel("Makespan (secondes)")
+            ax.set_title("Temps total d'exécution")
+            # Colorier le meilleur en vert
+            best_idx = makespans.index(min(makespans))
+            bars[best_idx].set_color('green')
+            st.pyplot(fig)
+            plt.close()
+        
+        with col3:
+            st.subheader("🖥️ VMs utilisées")
+            fig, ax = plt.subplots(figsize=(8, 5))
+            algos = list(results.keys())
+            vms_used = []
+            for a in algos:
+                num_vms = sum(1 for vm in results[a]["vms"] if vm.services)
+                vms_used.append(num_vms)
+            colors = sns.color_palette("husl", len(algos))
+            bars = ax.barh(algos, vms_used, color=colors)
+            ax.set_xlabel("Nombre de VMs utilisées")
+            ax.set_title("Utilisation des VMs")
+            # Colorier le meilleur (min) en vert
+            best_idx = vms_used.index(min(vms_used))
+            bars[best_idx].set_color('green')
+            st.pyplot(fig)
+            plt.close()
+        
+        with col4:
+            st.subheader("📦 Services placés")
+            fig, ax = plt.subplots(figsize=(8, 5))
+            algos = list(results.keys())
+            assigned = [results[a]["metrics"]["assigned"] for a in algos]
+            colors = sns.color_palette("husl", len(algos))
+            bars = ax.barh(algos, assigned, color=colors)
+            ax.set_xlabel("Nombre de services")
+            ax.set_title("Services placés / Total")
+            # Colorier le meilleur (max) en vert
+            best_idx = assigned.index(max(assigned))
+            bars[best_idx].set_color('green')
+            st.pyplot(fig)
+            plt.close()
+        
+        # === Tableau récapitulatif ===
+        st.markdown("---")
+        st.subheader("📋 Tableau récapitulatif")
+        
+        comparison_data = []
+        for algo_name in results.keys():
+            m = results[algo_name]["metrics"]
+            num_vms = sum(1 for vm in results[algo_name]["vms"] if vm.services)
+            comparison_data.append({
+                "Algorithme": algo_name,
+                "Temps exécution (s)": f"{execution_times[algo_name]:.4f}",
+                "Makespan (s)": m["makespan"],
+                "Services placés": f"{m['assigned']}/{m['assigned'] + m['rejected']}",
+                "VMs utilisées": num_vms,
+                "CPU util. (%)": f"{m['cpu_util_%']:.1f}%",
+                "RAM util. (%)": f"{m['ram_util_%']:.1f}%",
+            })
+        
+        df_comparison = pd.DataFrame(comparison_data)
+        st.dataframe(df_comparison, use_container_width=True, hide_index=True)
+        
+        st.success("✅ Comparaison complète !")
+

@@ -1,15 +1,25 @@
 # algorithms/genetic.py
 import random
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from deap import base, creator, tools
 from models.entities import Service, VM
 
 # Création des classes DEAP (une seule fois)
-creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-creator.create("Individual", list, fitness=creator.FitnessMin)
+try:
+    creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+    creator.create("Individual", list, fitness=creator.FitnessMin)
+except:
+    pass  # Classes déjà créées
 
 def genetic_algorithm(services: List[Service], vms_template: List[VM],
-                      pop_size=100, generations=200, cxpb=0.7, mutpb=0.3) -> Dict[int, int]:
+                      pop_size=100, generations=200, cxpb=0.7, mutpb=0.3, 
+                      objective: str = "makespan") -> Tuple[Dict[int, int], List[VM]]:
+    """
+    Algorithme génétique multi-objectif pour l'allocation de services aux VMs.
+    
+    Args:
+        objective: "makespan" (minimiser temps), "vms" (minimiser VMs), "hybrid" (compromis)
+    """
     n_services = len(services)
     n_vms = len(vms_template)
 
@@ -27,8 +37,31 @@ def genetic_algorithm(services: List[Service], vms_template: List[VM],
             if not temp_vms[vm_idx].can_host(svc):
                 return (10**9,)  # pénalité énorme si invalide
             temp_vms[vm_idx].assign(svc)
-        makespan = max(vm.completion_time for vm in temp_vms)
-        return (makespan,)
+        
+        # Calcul de la fitness selon l'objectif
+        if objective == "makespan":
+            # Minimiser le temps d'exécution total
+            makespan = max(vm.completion_time for vm in temp_vms)
+            return (makespan,)
+        
+        elif objective == "vms":
+            # Minimiser le nombre de VMs utilisées
+            vms_used = sum(1 for vm in temp_vms if vm.services)
+            return (float(vms_used),)
+        
+        elif objective == "hybrid":
+            # Compromis : 70% makespan + 30% VMs utilisées
+            makespan = max(vm.completion_time for vm in temp_vms)
+            vms_used = sum(1 for vm in temp_vms if vm.services)
+            # Normaliser pour les mêmes échelles
+            max_exec_time = max(s.exec_time for s in services) if services else 1
+            fitness = 0.7 * (makespan / max_exec_time) + 0.3 * vms_used
+            return (fitness,)
+        
+        else:
+            # Par défaut : minimiser makespan
+            makespan = max(vm.completion_time for vm in temp_vms)
+            return (makespan,)
 
     toolbox.register("evaluate", evaluate)
     toolbox.register("mate", tools.cxTwoPoint)

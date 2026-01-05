@@ -105,6 +105,6 @@ def genetic_algorithm(services: List[Service], vms_template: List[VM],
             final_vms[vm_idx].assign(svc)
             assignment[svc.id] = final_vms[vm_idx].id
 
-    # ON RETOURNE L'ASSIGNATION + ON REMPLACE LES VMS DANS main.py
+    # ON RETOURNE L'ASSIGNATION + ON REMPLACE LES VMS 
     # → mais comme on ne peut pas modifier vms depuis ici, on retourne aussi les VMs remplis
     return assignment, final_vms
